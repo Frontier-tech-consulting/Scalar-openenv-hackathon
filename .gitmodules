@@ -1,0 +1,3 @@
+[submodule "lib/EgoVerse"]
+	path = lib/EgoVerse
+	url = https://github.com/GaTech-RL2/EgoVerse.git
