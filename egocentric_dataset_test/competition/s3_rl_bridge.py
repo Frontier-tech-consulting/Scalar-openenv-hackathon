@@ -168,34 +168,38 @@ class S3DatasetClient:
         self.bucket, _, self.prefix = s3_uri.replace("s3://", "").partition("/")
         self.endpoint_url = endpoint_url or os.getenv("R2_ENDPOINT_URL") or os.getenv("AWS_ENDPOINT_URL_S3")
         self.region_name = region_name or os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
+        self.profile_name = os.getenv("AWS_PROFILE") or os.getenv("R2_PROFILE") or None
         self._client = None
 
     @property
     def has_credentials(self) -> bool:
-        access_key = os.getenv("AWS_ACCESS_KEY_ID") or os.getenv("R2_ACCESS_KEY_ID")
-        secret_key = os.getenv("AWS_SECRET_ACCESS_KEY") or os.getenv("R2_SECRET_ACCESS_KEY")
-        return bool(access_key and secret_key)
+        try:
+            import boto3
+        except ImportError:
+            return False
+        session = boto3.Session(profile_name=self.profile_name, region_name=self.region_name)
+        return session.get_credentials() is not None
 
     def _get_client(self):
         if self._client is not None:
             return self._client
         try:
             import boto3
+            from botocore.exceptions import BotoCoreError, ClientError
         except ImportError:
             return None
-        access_key = os.getenv("AWS_ACCESS_KEY_ID") or os.getenv("R2_ACCESS_KEY_ID")
-        secret_key = os.getenv("AWS_SECRET_ACCESS_KEY") or os.getenv("R2_SECRET_ACCESS_KEY")
-        session_token = os.getenv("AWS_SESSION_TOKEN") or os.getenv("R2_SESSION_TOKEN")
-        if not access_key or not secret_key:
+
+        try:
+            session = boto3.Session(profile_name=self.profile_name, region_name=self.region_name)
+            if session.get_credentials() is None:
+                return None
+            self._client = session.client(
+                "s3",
+                endpoint_url=self.endpoint_url,
+                region_name=self.region_name,
+            )
+        except (BotoCoreError, ClientError, Exception):
             return None
-        self._client = boto3.client(
-            "s3",
-            endpoint_url=self.endpoint_url,
-            aws_access_key_id=access_key,
-            aws_secret_access_key=secret_key,
-            aws_session_token=session_token,
-            region_name=self.region_name,
-        )
         return self._client
 
     def inspect(self, max_keys: int = 50) -> S3InspectionResult:
@@ -203,9 +207,13 @@ class S3DatasetClient:
         start = time.monotonic()
         client = self._get_client()
         if client is None:
+            profile_hint = f" profile '{self.profile_name}'" if self.profile_name else " default profile"
             return S3InspectionResult(
                 available=False,
-                error="S3 client unavailable: missing boto3 or AWS credentials",
+                error=(
+                    "S3 client unavailable: boto3 could not resolve AWS credentials from the local credential chain. "
+                    f"Run `aws configure` or `aws sso login` for the{profile_hint}, or export AWS_PROFILE."
+                ),
                 elapsed_ms=(time.monotonic() - start) * 1000,
             )
 
