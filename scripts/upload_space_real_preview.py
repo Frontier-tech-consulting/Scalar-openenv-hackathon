@@ -5,9 +5,10 @@ from pathlib import Path
 
 from huggingface_hub import HfApi
 
-REPO_ID = "Dhruv/egocentric-factory-competition-env"
+REPO_ID = os.environ.get("HF_SPACE_REPO_ID", "Dhruv/egocentric-factory-competition-env")
 FILES = [
     # Core config
+    "app.py",
     "Dockerfile",
     "README.md",
     "pyproject.toml",
@@ -27,6 +28,7 @@ FILES = [
     "egocentric_dataset_test/competition/tasks.py",
     "egocentric_dataset_test/competition/shards.py",
     "egocentric_dataset_test/competition/demo.py",
+    "egocentric_dataset_test/competition/hf_space_demo.py",
     "egocentric_dataset_test/competition/real_preview.py",
     # MuJoCo simulation
     "egocentric_dataset_test/competition/mujoco_sim.py",
@@ -51,6 +53,8 @@ def main() -> None:
     token = os.environ.get("HF_TOKEN")
     if not token:
         raise RuntimeError("HF_TOKEN is required")
+    if not REPO_ID:
+        raise RuntimeError("HF_SPACE_REPO_ID is required")
 
     api = HfApi(token=token)
     root = Path(__file__).resolve().parents[1]
@@ -64,7 +68,10 @@ def main() -> None:
             path_in_repo=relative_path,
             repo_id=REPO_ID,
             repo_type="space",
-            commit_message="Add S3 RL bridge + MuJoCo 3D simulation + Egocentric-100K integration",
+            commit_message=os.environ.get(
+                "HF_SPACE_COMMIT_MESSAGE",
+                "Update Space with split ZeroGPU vision app, S3 artifact support, and OpenEnv to MyoSim evaluation",
+            ),
         )
         print(f"✅ {relative_path} → {url}")
 

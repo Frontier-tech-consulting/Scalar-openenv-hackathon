@@ -21,3 +21,5 @@
 **/docs/
 
 yolo**.pt
+
+.pytest_cache/

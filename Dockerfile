@@ -15,6 +15,7 @@ RUN python -m pip install --upgrade pip && python -m pip install -r requirements
 
 COPY --chown=user egocentric_dataset_test/__init__.py ./egocentric_dataset_test/__init__.py
 COPY --chown=user egocentric_dataset_test/competition ./egocentric_dataset_test/competition
+COPY --chown=user egocentric_dataset_test/checkpoints/ego_openenv ./egocentric_dataset_test/checkpoints/ego_openenv
 COPY --chown=user server ./server
 COPY --chown=user inference.py ./inference.py
 COPY --chown=user openenv.yaml ./openenv.yaml

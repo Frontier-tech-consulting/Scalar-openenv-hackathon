@@ -1,0 +1,66 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Upload HF real preview bundle",
+			"type": "shell",
+			"command": "/Users/renu_malik/Desktop/coding_projects/hackathons/scaler_meta_ai_hackathon/openenv-course/.venv/bin/python",
+			"args": [
+				"-c",
+				"import os; from huggingface_hub import HfApi; api=HfApi(token=os.environ['HF_TOKEN']); repo='Dhruv/egocentric-factory-competition-env'; files=['Dockerfile','README.md','pyproject.toml','requirements-space.txt','uv.lock','egocentric_dataset_test/competition/demo.py','egocentric_dataset_test/competition/real_preview.py','egocentric_dataset_test/checkpoints/ego_openenv/dataset_reference.json','egocentric_dataset_test/checkpoints/ego_openenv/prepared_episodes.json','egocentric_dataset_test/checkpoints/ego_openenv/task_spec.json','egocentric_dataset_test/checkpoints/ego_openenv/training_summary.json','egocentric_dataset_test/checkpoints/ego_openenv/training_metrics.jsonl','egocentric_dataset_test/checkpoints/ego_openenv/training_curves.png','egocentric_dataset_test/checkpoints/ego_openenv/batch_diagnostics.png','egocentric_dataset_test/checkpoints/ego_openenv/rollout_diagnostics.png','egocentric_dataset_test/checkpoints/ego_openenv/rollout_render.mp4','egocentric_dataset_test/checkpoints/ego_openenv/egocentric_report.html']; [print(api.upload_file(path_or_fileobj=f, path_in_repo=f, repo_id=repo, repo_type='space', commit_message='Add Egocentric-100K dataset and RL preview')) for f in files]"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Run local OpenEnv UI",
+			"type": "shell",
+			"command": "/Users/renu_malik/Desktop/coding_projects/hackathons/scaler_meta_ai_hackathon/openenv-course/.venv/bin/python",
+			"args": [
+				"-m",
+				"uvicorn",
+				"server.app:app",
+				"--host",
+				"127.0.0.1",
+				"--port",
+				"7860"
+			],
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Run local OpenEnv UI (7861)",
+			"type": "shell",
+			"command": "/Users/renu_malik/Desktop/coding_projects/hackathons/scaler_meta_ai_hackathon/openenv-course/.venv/bin/python",
+			"args": [
+				"-m",
+				"uvicorn",
+				"server.app:app",
+				"--host",
+				"127.0.0.1",
+				"--port",
+				"7861"
+			],
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Run local OpenEnv UI (7861)",
+			"type": "shell",
+			"command": "/Users/renu_malik/Desktop/coding_projects/hackathons/scaler_meta_ai_hackathon/openenv-course/.venv/bin/python",
+			"args": [
+				"-m",
+				"uvicorn",
+				"server.app:app",
+				"--host",
+				"127.0.0.1",
+				"--port",
+				"7861"
+			],
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}
