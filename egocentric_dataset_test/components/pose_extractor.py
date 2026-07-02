@@ -32,12 +32,10 @@ class PoseSequence:
     records: list[BodyPoseRecord]
 
     def to_mjcf_keyframes(self) -> str:
-        lines = []
         for record in self.records:
             wrist = record.wrist_velocity.reshape(-1).tolist()
-            lines.append(
-                f'<key name="frame_{record.frame_index}" qpos="{' '.join(f'{value:.6f}' for value in wrist)}"/>'
-            )
+            qpos = " ".join(f"{value:.6f}" for value in wrist)
+            lines.append(f'<key name="frame_{record.frame_index}" qpos="{qpos}"/>')
         return "\n".join(lines)
 
     def dominant_hand(self) -> str:
