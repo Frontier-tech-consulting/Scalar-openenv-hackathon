@@ -17,6 +17,7 @@
 **/**.egg-info/
 
 **/data/
+!egocentric_dataset_test/data/
 
 **/docs/
 
