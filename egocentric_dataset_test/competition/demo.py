@@ -4,8 +4,10 @@ import tempfile
 from pathlib import Path
 from typing import Any
 import imageio
-import pandas as pd
-_HAS_PANDAS = True
+try:
+    import pandas as pd
+    _HAS_PANDAS = True
+except Exception:  # pragma: no cover
     pd = None  # type: ignore[assignment]
     _HAS_PANDAS = False
 
