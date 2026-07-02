@@ -21,8 +21,8 @@ stream = stream_full_pipeline(
 
 chunk_path = None
 for idx, update in enumerate(stream, start=1):
-    markdown, curve_path, frame_path, video_path = update
-    print(idx, markdown.splitlines()[0], bool(curve_path), bool(frame_path), bool(video_path))
+    markdown, reward_plot, telemetry_plot, preview_video_path, video_path = update
+    print(idx, markdown.splitlines()[0], bool(reward_plot is not None), bool(telemetry_plot is not None), bool(preview_video_path), bool(video_path))
     if video_path:
         chunk_path = video_path
         print("chunk_or_video_path", chunk_path)
