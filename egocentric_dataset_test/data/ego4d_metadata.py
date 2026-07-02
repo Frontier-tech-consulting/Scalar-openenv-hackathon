@@ -31,7 +31,26 @@ except Exception:  # pragma: no cover
 
 @dataclass
 class FrameEvalRecord:
-    """Single-frame evaluation record sourced from an Ego4D-style metadata store."""
+    """Per-frame Ego4D evaluation record.
+
+    Attributes
+    ----------
+    clip_id:
+        Unique identifier for the source video clip.
+    task_class:
+        High-level activity label (e.g. ``"assembly"``, ``"inspection"``).
+    confidence:
+        Model confidence score for the frame annotation (0–1).
+    hand_orientation:
+        Dominant hand side detected in the frame (``"left"``, ``"right"``,
+        ``"both"``, or ``None`` if not detected).
+    active_manipulation:
+        Whether the worker's hands are actively manipulating an object.
+    hand_count:
+        Number of hands detected in the frame.
+    zarr_episode_key:
+        Optional key linking this record to a Zarr episode archive.
+    """
 
     clip_id: str | None = None
     task_class: str | None = None
@@ -95,6 +114,59 @@ class Ego4DMetadataStore:
                         self._by_clip.setdefault(record.clip_id, []).append(record)
             except Exception:  # pragma: no cover
                 pass  # leave store empty; callers handle empty results
+
+    def load(self, max_rows: int = 10_000) -> None:
+        """(Re-)load up to *max_rows* records from the configured HuggingFace dataset.
+
+        No-op when the ``datasets`` package is unavailable.
+        """
+        if not (_HAS_DATASETS and _load_dataset is not None):
+            return
+        try:
+            ds = _load_dataset(self.dataset_id, split="train", streaming=True)
+            self.records = []
+            self._by_clip = {}
+            for i, row in enumerate(ds):
+                if i >= max_rows:
+                    break
+                record = _row_to_record(row)  # type: ignore[arg-type]
+                self.records.append(record)
+                if record.clip_id:
+                    self._by_clip.setdefault(record.clip_id, []).append(record)
+        except Exception:  # pragma: no cover
+            pass
+
+    def load_from_parquet(
+        self,
+        parquet_path: str,
+        max_rows: int = 10_000,
+        include_images: bool = False,
+    ) -> None:
+        """Load records from a local Parquet file using ``pandas``.
+
+        Parameters
+        ----------
+        parquet_path:
+            Filesystem path to a Parquet file containing frame-level metadata.
+        max_rows:
+            Maximum number of rows to read (default 10 000).
+        include_images:
+            When *True* the ``image_bytes`` column (if present) is read but
+            not stored; reserved for future use.
+        """
+        try:
+            import pandas as pd  # type: ignore[import]
+
+            df = pd.read_parquet(parquet_path).head(max_rows)
+            self.records = []
+            self._by_clip = {}
+            for _, row in df.iterrows():
+                record = _row_to_record(row.to_dict())
+                self.records.append(record)
+                if record.clip_id:
+                    self._by_clip.setdefault(record.clip_id, []).append(record)
+        except Exception:  # pragma: no cover
+            pass
 
     def lookup_by_clip(self, clip_id: str) -> list[FrameEvalRecord]:
         """Return all records matching *clip_id*, or an empty list."""
