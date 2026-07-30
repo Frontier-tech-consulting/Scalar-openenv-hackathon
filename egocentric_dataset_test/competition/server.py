@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from egocentric_dataset_test.competition.environment import (
@@ -13,7 +14,13 @@ from egocentric_dataset_test.competition.environment import (
     EgocentricFactoryObservation,
     EgocentricFactoryState,
 )
+from egocentric_dataset_test.competition.demo import create_demo
 from egocentric_dataset_test.competition.tasks import DEFAULT_TASK_ID, list_task_specs
+
+try:
+    import gradio as gr
+except Exception:  # pragma: no cover
+    gr = None  # type: ignore[assignment]
 
 try:
     from openenv.core.env_server.types import ResetResponse, StepResponse
@@ -63,6 +70,17 @@ class StateEnvelope(BaseModel):
 ACTIVE_ENV: EgocentricFactoryCompetitionEnv | None = None
 
 
+def _root_payload() -> dict[str, object]:
+    return {
+        "name": "Egocentric Factory Competition Environment",
+        "status": "ok",
+        "tasks": [spec.task_id for spec in list_task_specs()],
+        "endpoints": ["/reset", "/step", "/state", "/metadata", "/schema", "/tasks"],
+        "backend_mode": DEFAULT_BACKEND_MODE,
+        "simulation_origin": "Derived from the Egocentric-100K + MyoSuite/MuJoCo factory assembly stack and distilled into a shard-based surrogate_myo OpenEnv contract.",
+    }
+
+
 def _serialize_reset(observation: EgocentricFactoryObservation) -> ResetResponse:
     return ResetResponse(
         observation=observation.model_dump(mode="json"),
@@ -95,16 +113,12 @@ def create_app() -> FastAPI:
         ),
     )
 
-    @app.get("/")
-    def root() -> dict[str, object]:
-        return {
-            "name": "Egocentric Factory Competition Environment",
-            "status": "ok",
-            "tasks": [spec.task_id for spec in list_task_specs()],
-            "endpoints": ["/reset", "/step", "/state", "/metadata", "/schema", "/tasks"],
-            "backend_mode": DEFAULT_BACKEND_MODE,
-            "simulation_origin": "Derived from the Egocentric-100K + MyoSuite/MuJoCo factory assembly stack and distilled into a shard-based surrogate_myo OpenEnv contract.",
-        }
+    @app.get("/", response_model=None)
+    def root(request: Request):
+        accepts = request.headers.get("accept", "")
+        if gr is not None and "text/html" in accepts:
+            return RedirectResponse(url="/demo")
+        return _root_payload()
 
     @app.get("/health")
     def health() -> dict[str, str]:
@@ -173,6 +187,9 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+demo = create_demo()
+if gr is not None and demo is not None:
+    app = gr.mount_gradio_app(app, demo, path="/demo")
 
 
 def main(host: str = "0.0.0.0", port: int = 7860) -> None:

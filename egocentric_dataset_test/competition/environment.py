@@ -83,6 +83,11 @@ class EgocentricFactoryObservation(Observation):
     last_action_error: str | None = Field(default=None, description="Most recent action validation error.")
     reward: float | None = Field(default=None, description="Most recent reward in [0, 1].")
     done: bool = Field(default=False, description="Whether the episode has terminated.")
+    hand_count: int = Field(default=0, description="Gemini-labeled hand count 0/1/2.")
+    hand_orientation: str = Field(default="none", description="Inferred hand laterality: none|left|right|both.")
+    task_class: str = Field(default="idle", description="Supply-chain task taxonomy label.")
+    active_manipulation: bool = Field(default=False, description="Whether the frame indicates active manipulation.")
+    pose_confidence: float = Field(default=0.0, description="Pose extraction confidence for the current observation.")
 
 
 class EgocentricFactoryState(State):
@@ -305,6 +310,11 @@ class EgocentricFactoryCompetitionEnv(
             last_action_error=episode.last_action_error,
             reward=float(reward),
             done=done,
+            hand_count=0,
+            hand_orientation="none",
+            task_class="idle",
+            active_manipulation=False,
+            pose_confidence=0.0,
             metadata={
                 "task_title": episode.spec.title,
                 "backend_mode": self._backend_mode,
